@@ -1,0 +1,507 @@
+{
+  "name": "Syncbricks WhatsApp Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST"
+        ],
+        "path": "whastapp/webhook",
+        "authentication": "basicAuth",
+        "responseMode": "streaming",
+        "options": {}
+      },
+      "id": "fe10c7ad-0096-456e-b82a-9bf3cd5ef0e6",
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        256,
+        448
+      ],
+      "webhookId": "c9ab07c6-61ca-4480-a705-d64512210a6a",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "t4JZMqOqmRd9SHDn",
+          "name": "Unnamed credential 2"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "sender_id",
+              "value": "={{ $json.body.sender_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "user_message",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "timestamp",
+              "value": "={{ $json.messages[0].timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "message_type",
+              "value": "={{ $json.messages[0].type }}",
+              "type": "string"
+            },
+            {
+              "id": "c8365bb1-974f-4c5d-99c3-98ad1b5667b6",
+              "name": "from ",
+              "value": "={{ $json.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "38c293a5-61d5-41c3-a3f4-c45520367da7",
+              "name": "",
+              "value": "={{ $json.contacts[0].profile.name }}",
+              "type": "string"
+            },
+            {
+              "id": "2730be13-43c6-4f10-9de5-cf62a01235e4",
+              "name": "phone_number_id",
+              "value": "={{ $json.metadata.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "426504ce-a3e4-4003-9d0d-694f92f9114a",
+              "name": "wd_id",
+              "value": "={{ $json.contacts[0].wa_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7a6b23fd-5676-4098-accc-91e126439d2c",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        400
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a8f78ab2-3150-447b-8b8f-70f1702846b0",
+      "name": "Main",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Edit Fields').item.json.user_message }}",
+        "options": {
+          "systemMessage": "You are a helpful WhatsApp customer service assistant. You have access to Wikipedia for factual information and web search for current information. Always provide accurate, helpful responses. Use the sender_id context to personalize responses when appropriate.",
+          "maxIterations": 10
+        }
+      },
+      "id": "bc2a49eb-b8fb-4c01-9386-937d8e3f53b8",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1632,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "chat_history",
+        "contextWindowLength": 20
+      },
+      "id": "c2083693-f076-46ae-a28d-77b59f97bb8f",
+      "name": "Redis Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.6,
+      "position": [
+        1632,
+        432
+      ],
+      "credentials": {
+        "redis": {
+          "id": "PexpD8kUHneff0Qr",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "3643449d-0c07-4449-9fd3-7cd519808d5c",
+      "name": "Wikipedia",
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "search",
+        "query": "={{ $fromAI(\"search_query\", \"The search query to execute\") }}",
+        "simplify": true,
+        "options": {
+          "maxResults": 5
+        },
+        "requestOptions": {}
+      },
+      "id": "c85e488e-a022-4ff1-bbc9-e03e1b943032",
+      "name": "Google Custom Search",
+      "type": "n8n-nodes-base.perplexityTool",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        432
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{1163719476817640}}",
+        "recipientPhoneNumber": "919502452644",
+        "textBody": "={{ $(\"AI Agent\").item.json.output }}",
+        "additionalFields": {}
+      },
+      "id": "041ca918-dd01-473b-9309-48b985300339",
+      "name": "WhatsApp Send Reply",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2096,
+        192
+      ],
+      "webhookId": "94c0c20d-48b2-47be-990e-83c648539d8b",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "sJvnTryWaffDB3XB",
+          "name": "WhatsApp account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format API payload\nconst items = $input.all();\nconst formattedPayload = {\n  sender_id: items[0].json.sender_id,\n  message: items[0].json.output,\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: { payload: formattedPayload, api_endpoint: 'https://api.example.com/webhook' } }];"
+      },
+      "id": "a430a731-fa82-44fd-970b-28d9cc579d05",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2320,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.api_endpoint }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.payload }}",
+        "options": {}
+      },
+      "id": "83932c28-5150-4712-a56f-d99754399441",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2544,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "748f1d31-cf74-4526-b251-692caa43130c",
+          "mode": "id"
+        },
+        "prompt": "={{ $(\"Edit Fields\").item.json.user_message }}",
+        "topK": 20,
+        "options": {}
+      },
+      "id": "0f75ca15-48fb-47bf-9e5c-92f36e175ce6",
+      "name": "Qdrant",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        2768,
+        192
+      ],
+      "credentials": {
+        "qdrantApi": {
+          "id": "G2Ivv9sNEsFjqJpA",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://crm.example.com/api/updates",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "ffa4a641-871f-4228-a62e-59fa9c0c4742",
+      "name": "External Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3136,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "01ee7877-9a84-48f1-a181-e19b5ed45cff",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2816,
+        480
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "vVUoiXbGC9CRfXs8",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        464,
+        448
+      ],
+      "id": "831e12d2-db79-4e41-9331-8676fa93aaf9",
+      "name": "WhatsApp Trigger1",
+      "webhookId": "da3120f1-1bff-4850-a0ac-1de781cc8404",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "r2Yw85DZ1sTn1zrB",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        416
+      ],
+      "id": "18e1da46-65f6-4999-921c-6142f5e19da2",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "V69mj1FNaXBZV31e",
+          "name": "Groq account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Main",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Main": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Send Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wikipedia": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Custom Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Send Reply": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Qdrant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant": {
+      "main": [
+        [
+          {
+            "node": "External Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
+  },
+  "versionId": "9369e0f2-ce4a-42a5-88fe-ff9829c3d137",
+  "meta": {
+    "instanceId": "0351118fe2ea399304f36013e0690f15443b803ec897bfa69a3f4dc0b1b95155"
+  },
+  "id": "1OCrIyHNj1HSpEhk",
+  "tags": []
+}
